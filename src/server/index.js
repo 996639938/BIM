@@ -23,6 +23,7 @@ import ExtractAPI from './api/endpoints/extract'
 import SocketAPI from './api/endpoints/socket'
 import ConfigAPI from './api/endpoints/config'
 import NewDMAPI from './api/endpoints/newdm'
+import NewInterfaceAPI from './api/endpoints/newinterface'
 import ModelAPI from './api/endpoints/models'
 import ForgeAPI from './api/endpoints/forge'
 import HooksAPI from './api/endpoints/hooks'
@@ -124,11 +125,8 @@ if(process.env.NODE_ENV === 'development') {
   app.use('/api/', limiter)
 }
 
-// app.use(bodyParser.urlencoded({extended: false }))
-// app.use(bodyParser.json())
-
-app.use(bodyParser.urlencoded({ limit:'100mb',extended: true }))
-app.use(bodyParser.json({limit:'50mb'}))
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 app.set('trust proxy', 1)
 app.use(cookieParser())
 
@@ -176,6 +174,7 @@ app.use('/api/extract',   ExtractAPI())
 app.use('/api/socket',    SocketAPI())
 app.use('/api/config',    ConfigAPI())
 app.use('/api/newdm',     NewDMAPI())
+app.use('/api/newinterface',     NewInterfaceAPI())
 app.use('/api/models',    ModelAPI())
 app.use('/api/forge',     ForgeAPI())
 app.use('/api/hooks',     HooksAPI())

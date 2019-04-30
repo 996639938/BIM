@@ -46,7 +46,6 @@ module.exports = function () {
     try {
 
       const db = req.params.db
-
       const dbSvc = ServiceManager.getService(
         config.database.dbName)
 
@@ -120,7 +119,7 @@ module.exports = function () {
   })
 
   ///////////////////////////////////////////////////////
-  //
+  //接受参数：对应材料的item  返回：整个所有材料的列表
   //
   ///////////////////////////////////////////////////////
   router.post('/:db', async (req, res) => {
@@ -128,7 +127,7 @@ module.exports = function () {
     try {
 
       const db = req.params.db
-
+      //console.log("materials.js中db的值是：" + db)
       const dbSvc = ServiceManager.getService(
         config.database.dbName)
 

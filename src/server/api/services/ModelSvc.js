@@ -54,6 +54,25 @@ export default class ModelSvc extends BaseSvc {
       }
     })
   }
+  /////////////////////////////////////////////////////////
+  //
+  //将模型存入数据库
+  /////////////////////////////////////////////////////////
+  // addModel(item,opts = {}) {
+  //   try {
+  //     const dbSvc = ServiceManager.getService(
+  //       this._config.dbName) 
+      
+  //     return dbSvc.upsert(
+  //       this._config.collection,
+  //       item,
+  //       opts)
+      
+  //   } catch (ex) {
+
+  //     return Promise.reject (ex)
+  //   }
+  // }
 
   /////////////////////////////////////////////////////////
   //
@@ -83,7 +102,8 @@ export default class ModelSvc extends BaseSvc {
   getModels (opts = {}) {
 
     try {
-
+      // console.log(this._config.dbName)
+      // console.log(this._config.collection)
       const dbSvc = ServiceManager.getService(
         this._config.dbName)
 
@@ -143,7 +163,7 @@ export default class ModelSvc extends BaseSvc {
 
   /////////////////////////////////////////////////////////
   //
-  //
+  //新增模型
   /////////////////////////////////////////////////////////
   register (modelInfo) {
 
@@ -151,7 +171,7 @@ export default class ModelSvc extends BaseSvc {
 
       const dbSvc = ServiceManager.getService(
         this._config.dbName)
-
+      console.log("begin insert")
       return dbSvc.insert(
         this._config.collection,
         modelInfo)
