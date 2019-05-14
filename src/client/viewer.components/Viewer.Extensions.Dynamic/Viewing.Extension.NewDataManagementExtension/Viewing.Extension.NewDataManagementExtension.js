@@ -18,6 +18,7 @@ import Switch from 'Switch'
 import Label from 'Label'
 import React from 'react'
 import DataContainerDlg from 'Dialogs/DataContainerDlg'
+import DataDetailContainerDlg from 'Dialogs/DataDetailContainerDlg'
 import {
   Modal,
   DropdownButton,
@@ -73,6 +74,8 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
     this.drake = null
 
     this.dataPanel = null
+
+    this.dataDetailPanel = null
 
     if (this.options.apiUrl) {
 
@@ -281,28 +284,9 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
           if (this.api) {
 
-            this.loadSequences()  //175行
+            this.loadUsers()  //175行
           }
-          //////////////////////////////////////////////////////////////////////////////////////////////////////
-          //在 layout 下创建资料的容器
-          //可用
-          //////////////////////////////////////////////////////////////////////////////////////////////////////////
-          // const layout = document.getElementsByClassName('reflex-layout reflex-container vertical configurator')[0],
-          //       oldContainer = layout.lastChild,
-          //       myDataContainer = document.createElement('div');
-          //
-          // myDataContainer.id = "myDataContainer"
-          // const className = 'myDataContainer'
-          // myDataContainer.className = className
-          //
-          // if(oldContainer.id == "myDataContainer"){
-          //   layout.removeChild(oldContainer)
-          // }
-          // layout.appendChild(myDataContainer)
-          //
-          ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-          
       })
     }).catch((error)=>{
 
@@ -339,8 +323,8 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
   //      1、加载视点序列,只加载 sequences 数组的第一个sequence,
   //      2、* 使用 setState 方法初始化 sequences 状态，使得 sequences 保存所有的视点组
   //      3、2秒后执行 setActiveSequence 方法（参数：传入视点组集合的第一个视点组sequence）（*显示视点）
-  
-  async loadSequences () {
+  //  loadSequences
+  async loadUsers () {
 
     let hasUserLogin = ''
 
@@ -355,7 +339,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
       let usernameArr = Object.values(this.storageSvc.load('user'));
       usernameArr.pop();
-      hasUserLogin = usernameArr.join()
+      hasUserLogin = usernameArr.join("")
     }
 
     
@@ -370,16 +354,26 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
     //注释：this.api 就是 Viewing.Extension.Config.API.js导出的实例
     //      这里返回的 sequences 是一个只有一个用户的数组，["cangshu"]
-    let sequences =
-      await this.api.getSequences({
+    let users =
+      await this.api.getUsers({
         sortByName: true
       })
-    //TODO:这里应该返回一个用户的sequence
-    //修改：将const sequences = sequences.length 修改为 const user = sequences.length
-    let user = sequences.length ?
-      sequences[0] : null
-    
+
+
+    console.log("这是所有的用户列表:>>>>>>>>>>>>",users)
+    //TODO:这里根据 sessionStorage 中的用户名在所有数据管理用户队列中进行 filter操作，取第一个，需要让用户名唯一！！！
+    let user = users.filter((userItem) =>{
+      if(userItem.user == hasUserLogin ){
+        return true;
+      }else{
+        return false;
+      }
+    })[0]
+    console.log("过滤得到的 user ： >>>>>>>",user)
+
     if(!user){
+
+      console.log("用户第一次使用数据管理模块，加入数据管理用户队列")
 
       const username = hasUserLogin;
 
@@ -387,38 +381,38 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
       const loginUser = {
         id: this.guid(),
-        stateIds: [],
+        userDataIds: [],
         user:username
       }
 
       if(this.api){
 
-        await this.api.addSequence(loginUser)
+        const resUser = await this.api.addUser(loginUser)
 
-        sequences =
-        await this.api.getSequences({
+        console.log("增加数据用户的返回值 resUser:>>>>>>",resUser)
+
+        //TODO：这个 users 并不需要
+        users =
+        await this.api.getUsers({
           sortByName: true
         })
 
-        user = sequences.length ?
-          sequences[0] : null
+        user = resUser
       }
 
     }
-      
-    //修改：将 this.react.setState({ 修改为  this.react.setState({
-    //       sequences                                            user
-    //     })                                   })
+
+
     this.react.setState({
       user,
-      sequences
+      sequences:users
     })
 
     //await this.sleep(2000)
 
     setTimeout(() => {
       this.setActiveSequence (user)
-    }, 2000)
+    }, 800)
   }
 
 
@@ -427,7 +421,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
     this.setModel(event.model)
 
-    this.loadSequences()
+    this.loadUsers()
   }
 
   //
@@ -482,7 +476,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
         //注释：再向数据库中添加新的视点序列
         if (this.api) {
 
-          this.api.addSequence(sequence)
+          this.api.addUser(sequence)
         }
       }
 
@@ -554,7 +548,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
         if (this.api) {
 
-          this.api.addSequence (Object.assign({},
+          this.api.addUser (Object.assign({},
             sequence, {
               stateIds: []
             })).then(() => {
@@ -707,6 +701,8 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
         dataType:state.uploadDataType
       })
     
+    console.log("this.viewer.getState的值是——————:",this.viewer.getState())
+
     //更改：新增。判断用户是否选择焦点，如果没有选择，则弹窗提示
     if(viewerState.objectSet[0].id.length === 0){
       this.showMissPointDlg()
@@ -737,8 +733,6 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
 
           const keys = Object.keys(files).toString()
 
-          console.log("files的索引数组是:>>>>>>>>>>>>>>>>>>>",keys.toString())
-
 
           const responseView = await this.api.addStateFile(state.user.id,files,{
             "data":{
@@ -746,30 +740,8 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
               "keys":keys
             }})
 
-            console.log("_________________________test:________:",responseView)
-            console.log("_________________________testbody:________:",responseView.body)
 
             viewerState = Object.assign({},viewerState,responseView.body)
-
-
-          // const newState =  await this.api.addStateFile(
-          //   state.user.id,
-          //   files,
-          //   {"data":{"state":JSON.stringify(viewerState)}})
-
-
-          /*let formData = new FormData(document.getElementById("uploadForm")[0]);
-          let formData = new FormData()
-          for(let i in files){
-            if(files.hasOwnProperty(i)){
-              console.log(`files属性 i 的 value是：>>>>>>>>>> `,files[i])
-              formData.append("myUpload",files[i]);
-            }
-          }
-          formData.append("state",JSON.stringify(viewerState));
-          console.log("上传文件的 formData 对象：>>>>>>>",formData)
-          console.log("上传文件的 formData 对象的第一个值是：>>>>>>>",formData.get("myUpload"))
-          await this.api.addStateFiles(state.user.id,formData)*/
 
         }else{
     console.log("没有上传文件的情况_____________:)____")
@@ -1014,7 +986,8 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
     this.react.setState({
       play: false,
       items: [],
-      sequence
+      sequence,
+      user:sequence
     })
 
     if (this.drake) {
@@ -1036,7 +1009,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
           await this.api.getStates(
             sequence.id)
 
-        // console.log(`!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!----`+states)
+        console.log(`state的值!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!----`,states)
 
         states.forEach((state) => {
 
@@ -1314,7 +1287,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
           encType='multipart/form-data'
           style={{"width":170}}>
           
-          {/*<a className="uploadOuter">*/}
+          <a className="uploadOuter">
           {/* TODO:优先级高，在这里要显示已经选择的文件名，下一行？ */}
           {/*选择文件*/}
           <input 
@@ -1326,7 +1299,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
             >
           </input>
 
-          {/*</a>*/}
+          </a>
 
         </form>
 
@@ -1336,7 +1309,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
           title="上传视点资料"
           style={{"width":100}}>
           <span className="fa fa-plus-square">
-          上传视点
+          上传数据
           </span>
         </button>
 
@@ -1460,7 +1433,10 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
     const layout = document.getElementsByClassName('reflex-layout reflex-container vertical configurator')[0];
 
 
-    console.log("renderItems->items ： ",state.items)
+    const layoutHeight = document.body.clientHeight;
+    const layoutWidth = layout.offsetWidth;
+
+    console.log("渲染的资料 -> renderItems->items ： ",state.items)
 
     const items = state.items.map((item) => {
 
@@ -1540,6 +1516,7 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
                       return 
                     })
                   }
+                  
 
                   // 遍历 filePath ，添加到弹窗里面
                   let showDataContainer = document.getElementById("myDataContainer");
@@ -1558,21 +1535,72 @@ class NewDataManagementExtension extends MultiModelExtensionBase {
                       console.log("这是视频")
                       
                       newItemData = document.createElement("video");
-                      newItemData.controls = "controls"
+                      // newItemData.controls = "controls"
                     }else if(/.(jpg|png|jpeg|bmp|gif)$/i.test(itemFileName)){
                       console.log("这是照片")
   
                       newItemData = document.createElement("img");
                     }else{
                       //TODO:其他文档资料没有判定
-                      alert("该资料出现不支持的文档类型，错误！")
+                      console.log("该资料其他形式的文档类型！")
+
+                      newItemData = document.createElement("a")
+                      newItemData.className = "itemData"
+
+                      newItemData.download = itemFileName;
+                      newItemData.innerText = `文件 ${itemFileName} 为资料文档，请点击下载文件`;
+                      // newItemData.src = "/resources/img/newDM/"+item.filename;
+                      newItemData.href = file.filepath;
+
+                      showDataContainer.appendChild(newItemData);
                       return
                     }
+                  
 
-                  newItemData.addEventListener('click',(e)=>{
-                    alert(`点击了文件`)
-                    console.log(e.target.width)
-                    console.log(e.target.height)
+                  newItemData.addEventListener('click',async(e)=>{
+
+                    if(!that.dataDetailPanel){
+                      //使用 this.react.pushViewerPanel API 传入 DataContainerDlg 实例创建资料容器
+
+                      console.log("这个容器第一次创建___________")
+                      const myDetailDataContainerDlg = new DataDetailContainerDlg()
+                      that.dataDetailPanel = await this.react.pushViewerPanel(myDetailDataContainerDlg, {
+                        height: 750,
+                        width: 750
+                      })
+                      // 获取 弹窗的关闭按钮，注册其 onClick 事件关闭弹窗
+                      const dataDetailTitleClose = document.getElementById('dataDetailTitleClose');
+                      
+                      dataDetailTitleClose.addEventListener('click',()=>{
+                        
+                        that.react.popViewerPanel(myDetailDataContainerDlg.id).then(()=>{
+                          that.dataDetailPanel = null
+                        })
+                      })
+                    }
+
+                    let showDataDetailContainer = document.getElementById("myDataDetailContainer");
+                    
+                    const lastDataDetail = showDataDetailContainer.firstChild
+
+                    if(lastDataDetail){
+                      showDataDetailContainer.removeChild(lastDataDetail)
+                    }
+
+                    const dataDetailContainer = document.createElement(e.target.nodeName);
+                    if(e.target.nodeName=="VIDEO"){
+                      
+                      dataDetailContainer.controls = "controls"
+                    }
+                    dataDetailContainer.className = "itemData"
+                    dataDetailContainer.onload = ()=>{
+                      console.log('+++++++++++资料详情放大图加载成功， onload+++++++++++=+++++++')
+                    }
+                    dataDetailContainer.onerror=(e)=>{
+                      console.log('!!!!!!资料详情放大图加载失败!!!!!!: 错误:',e)
+                    }
+                    dataDetailContainer.src = e.target.src;
+                    showDataDetailContainer.appendChild(dataDetailContainer)
                   })
 
                   //如果存在缓存照片，则 remove

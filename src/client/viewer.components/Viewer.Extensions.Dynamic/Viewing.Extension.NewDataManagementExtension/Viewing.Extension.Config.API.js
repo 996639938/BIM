@@ -21,7 +21,7 @@ export default class ConfigAPI extends ClientAPI {
   // 注释：获取所有视点队列（组）sequences
   // 更改：改为 获取所有用户的存有数据的视点组
   /////////////////////////////////////////////////////////
-  getSequences (opts) {
+  getUsers (opts) {
 
     return new Promise ((resolve, reject) => {
 
@@ -44,15 +44,16 @@ export default class ConfigAPI extends ClientAPI {
   // 注释：这个功能应该需要改动，addSequence类似增加用户
   //
   /////////////////////////////////////////////////////////
-  addSequence (user) {
+  addUser (user) {
 
+    return new Promise((resolve,reject) => {
     const payload = {
       user
     }
 
-    const url = '/userdata'
+    const url = '/usersdata'
 
-    return this.ajax({
+    this.ajax({
       url: url,
       method: 'POST',
       headers: {
@@ -60,7 +61,13 @@ export default class ConfigAPI extends ClientAPI {
         'Content-Type': 'application/json'
       },
       data: JSON.stringify(payload)
+    }).then((result)=>{
+
+      resolve(result)
+
+    }, (error)=>reject(error))
     })
+
   }
 
   /////////////////////////////////////////////////////////
@@ -105,11 +112,11 @@ export default class ConfigAPI extends ClientAPI {
   // 注释：这里的sequenceId应该是userId
   // * 返回的 res 是根据 sequenceId 指定的视点组 sequence 中的 statesId 中所有视点得具体信息组合得数组
   /////////////////////////////////////////////////////////
-  async getStates (sequenceId) {
+  async getStates (userId) {
 
     try {
 
-      const url = `/usersData/${sequenceId}/states`
+      const url = `/usersData/${userId}/states`
 
       const res = await this.ajax(url)
 
@@ -179,9 +186,9 @@ export default class ConfigAPI extends ClientAPI {
   // 修改：上传文件的新函数,使用 super.upload 函数上传
   //
   /////////////////////////////////////////////////////////
-  addStateFile (sequenceId, files, opts = {}) {
+  addStateFile (userId, files, opts = {}) {
 
-    const url = `/sequences/${sequenceId}/file`
+    const url = `/usersData/${userId}/file`
 
     /*const options = Object.assign({}, {
       keys: keys.toString()

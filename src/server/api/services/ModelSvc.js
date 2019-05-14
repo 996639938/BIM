@@ -408,7 +408,7 @@ export default class ModelSvc extends BaseSvc {
   }
 
   /////////////////////////////////////////////////////////
-  // 注释：新增，添加 users , 相当于 sequences
+  // 注释：添加 users , 相当于 sequences
   //
   /////////////////////////////////////////////////////////
   addUserData (modelId, user) {
@@ -434,9 +434,11 @@ export default class ModelSvc extends BaseSvc {
           },
           (err) => {
 
+            console.log("_______________________error",err)
+
             return err
               ? reject(err)
-              : resolve (sequence)
+              : resolve (user)
           })
 
       } catch (ex) {
@@ -675,27 +677,32 @@ export default class ModelSvc extends BaseSvc {
 
           if (err) {
 
+            consooe.log("getUserDataStates 资料视点数据操作服务发生错误>>>>>>>>>>>>: ",err)
+
             return reject(err)
           }
 
+
+          //此处使用 result[0]做判断
           if(!result || !result.length){
 
+          console.log("getUserDataStates 资料视点数据操作服务未找到数据,result:>>>>>>>>",result)
             return reject({error: 'Not Found'})
           }
 
-          const sequence = result[0].users
+          const user = result[0].users
 
           const stateMap = {};
 
           result[0].userData.forEach((state) => {
 
-            if (sequence.stateIds.indexOf(state.id) > -1){
+            if (user.userDataIds.indexOf(state.id) > -1){
 
               stateMap[state.id] = state
             }
           })
 
-          const states = sequence.stateIds.map((id) => {
+          const states = user.userDataIds.map((id) => {
             return stateMap[id]
           })
 
@@ -772,54 +779,40 @@ export default class ModelSvc extends BaseSvc {
   // 修改：新增的，资料管理上传文件的数据库操作逻辑
   /////////////////////////////////////////////////////////
   
-  addDataSequenceFile (modelId, sequenceId, states) {
-
+  adduserDataFile (modelId, userId, userData) {
     return new Promise(async(resolve, reject) => {
-
       try {
-
         const dbSvc = ServiceManager.getService(
           this._config.dbName)
-
         const collection = await dbSvc.getCollection(
           this._config.collection)
-
-        console.log(`》》》》》》》执行到了！！上传文件!!!的数据库`)
-
-        const statesArray = Array.isArray(states)
-          ? states : [states]
-
-        console.log(`>>>>>>>数据库这里statesArr的值是>>>>>>>>>>>>>>： `)
-        console.log(statesArray)
-        console.log(`>>>>>>>statesArray是个数组吗？>>>>>>>>>>>>>>： `)
-        
-        const stateIds = statesArray.map((item) => {
+        const userDataArray = Array.isArray(userData)
+          ? userData : [userData]
+        console.log(">>>>>>>>>>>>>这是modelId:>>>>>>>>>>>>>>>>>>>>>>>>>>",modelId)
+        console.log(">>>>>>>>>>>>>这是userId:>>>>>>>>>>>>>>>>>>>>>>>>>>",userId)
+        const userDataIds = userDataArray.map((item) => {
           return item.id
         })
-
         collection.update(
           {
             '_id': new mongo.ObjectID(modelId),
-            'users.id': sequenceId
+            'users.id': userId
           },
           {
             $push: {
-              'users.$.stateIds': {
-                $each: stateIds
+              'users.$.userDataIds': {
+                $each: userDataIds
               },
               'userData': {
-                $each: statesArray
+                $each: userDataArray
               }
             }
           }, (err) => {
-
             return err
               ? reject(err)
-              : resolve (states)
+              : resolve (userData)
           })
-
       } catch (ex) {
-
         return reject(ex)
       }
     })
@@ -890,7 +883,7 @@ export default class ModelSvc extends BaseSvc {
           },
           {
             '$pull': {
-              'users.$.stateIds': stateId,
+              'users.$.userDataIds': stateId,
               'userData': {id: stateId}
             }
           },
